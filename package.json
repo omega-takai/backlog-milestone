@@ -2,15 +2,32 @@
   "name": "backlog-milestone",
   "version": "1.0.0",
   "description": "Backlog（ヌーラボ）のチケットをCSVとAPIで更新する",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "backlog",
     "nulab"
   ],
-  "author": "Tomonari TAKAI",
   "license": "MIT",
+  "author": "Tomonari TAKAI",
+  "scripts": {
+    "add-milestone": "tsx src/addMilestone.ts",
+    "delete-milestone": "tsx src/deleteMilestone.ts",
+    "logs:clear": "rm -rf logs/* || true",
+    "print:milestones": "tsx src/printMilestones.ts",
+    "shift-jis-to-utf8": "tsx src/shiftJisToUtf8.ts",
+    "typecheck": "tsc --noEmit",
+    "update-milestones": "tsx src/updateMilestones.ts"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "axios": "^1.11.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
   "packageManager": "pnpm@10.15.1",
   "volta": {
     "node": "22.19.0"
