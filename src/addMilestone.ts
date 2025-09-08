@@ -40,7 +40,7 @@ async function addMilestoneToIssue(
 ): Promise<void> {
   const issue = await fetchWithRetry({
     apiCall: () => fetchIssueDetail(issueKey),
-    baseDelay: DELAY_MS,
+    baseDelay: 0,
   });
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
@@ -93,6 +93,7 @@ async function addMilestoneToIssue(
   try {
     await fetchWithRetry({
       apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
+      baseDelay: DELAY_MS,
     });
     logger.log("");
     logger.log("✅ 更新完了");
