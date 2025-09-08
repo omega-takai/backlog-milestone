@@ -101,10 +101,14 @@ pnpm run logs:clear
 
 ### オプション
 
-- `CSV_FILE` で入力 CSV を切り替え可能
-- `MILESTONE` で追加/削除する対象のマイルストーンを指定
-- `LOG_DIR` でログ出力先を変更可能
-- `--dry-run` または `DRY_RUN=1` でドライラン
+| 名前               | 説明                                          | 例                                     |
+| ------------------ | --------------------------------------------- | -------------------------------------- |
+| `CSV_FILE`         | 入力する CSV ファイルのパス。相対パス可       | `CSV_FILE=csv/input_utf_8/example.csv` |
+| `ISSUE_KEY_COLUMN` | CSV の課題キー列のヘッダ名                    | `ISSUE_KEY_COLUMN=キー`                |
+| `MILESTONE_COLUMN` | CSV のマイルストーン列のヘッダ名              | `MILESTONE_COLUMN=マイルストーン`      |
+| `MILESTONE`        | 追加/削除の対象となるマイルストーン名（単一） | `MILESTONE=v1.0`                       |
+| `DRY_RUN`          | ドライラン指定（`--dry-run` と同義）          | `DRY_RUN=1 pnpm run add-milestone`     |
+| `LOG_DIR`          | ログの出力ディレクトリ                        | `LOG_DIR=logs`                         |
 
 > [!NOTE]
 >

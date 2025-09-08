@@ -10,6 +10,8 @@ const PROJECT_KEY = process.env.BACKLOG_PROJECT_KEY!;
 export type LoggerLike = {
   log: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
+  group?: (label: string) => void;
+  groupEnd?: () => void;
 };
 
 export interface Milestone {
@@ -33,10 +35,6 @@ export interface IssueDetail {
 export async function fetchMilestoneMap(
   logger?: LoggerLike
 ): Promise<Record<string, number>> {
-  logger?.log(
-    "→ fetchMilestoneMap",
-    `${SPACE_URL}/api/v2/projects/${PROJECT_KEY}/versions`
-  );
   const res = await axios.get<Milestone[]>(
     `${SPACE_URL}/api/v2/projects/${PROJECT_KEY}/versions`,
     { params: { apiKey: API_KEY } }
@@ -46,10 +44,11 @@ export async function fetchMilestoneMap(
     map[m.name] = m.id;
   });
   if (logger) {
-    logger.log("← fetchMilestoneMap ok (id, name)");
+    logger.group?.("fetchMilestoneMap ok (id, name)");
     for (const m of res.data) {
-      logger.log(`  ${m.id}\t${m.name}`);
+      logger.log(`${m.id} ${m.name}`);
     }
+    logger.groupEnd?.();
   }
   return map;
 }

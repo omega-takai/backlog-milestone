@@ -14,7 +14,12 @@ export class Logger {
 
   log(...args: unknown[]): void {
     console.log(...args);
-    this.stream.write(this.indent() + args.map(String).join(" ") + "\n");
+
+    // NOTE:オブジェクトだった場合にJSON.stringifyする
+    const json = args.map((arg) =>
+      typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+    );
+    this.stream.write(this.indent() + json.join(" ") + "\n");
   }
 
   // 差分行を統一フォーマットで出力する

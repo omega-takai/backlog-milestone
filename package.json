@@ -11,6 +11,9 @@
   "scripts": {
     "add-milestone": "tsx src/addMilestone.ts",
     "delete-milestone": "tsx src/deleteMilestone.ts",
+    "dry-run:add-milestone": "tsx src/addMilestone.ts --dry-run",
+    "dry-run:delete-milestone": "tsx src/deleteMilestone.ts --dry-run",
+    "dry-run:update-milestones": "tsx src/updateMilestones.ts --dry-run",
     "logs:clear": "rm -rf logs/* || true",
     "print:milestones": "tsx src/printMilestones.ts",
     "shift-jis-to-utf8": "tsx src/shiftJisToUtf8.ts",

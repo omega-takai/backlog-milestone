@@ -15,11 +15,9 @@ const SPACE_URL = process.env.BACKLOG_SPACE_URL!;
 const PROJECT_KEY = process.env.BACKLOG_PROJECT_KEY!;
 const CSV_FILE = process.env.CSV_FILE!;
 const ENV_DRY_RUN = process.env.DRY_RUN || process.env.BACKLOG_DRY_RUN;
-const LOG_DIR = process.env.LOG_DIR || "logs";
-
-// CSVの列名（Backlogのエクスポートに合わせて調整）
-const ISSUE_KEY_COLUMN = "キー";
-const MILESTONE_COLUMN = "マイルストーン";
+const LOG_DIR = process.env.LOG_DIR!;
+const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
+const MILESTONE_COLUMN = process.env.MILESTONE_COLUMN!;
 
 interface CsvRow {
   [key: string]: string;

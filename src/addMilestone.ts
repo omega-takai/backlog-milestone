@@ -15,11 +15,9 @@ const SPACE_URL = process.env.BACKLOG_SPACE_URL!;
 const PROJECT_KEY = process.env.BACKLOG_PROJECT_KEY!;
 const CSV_FILE = process.env.CSV_FILE!;
 const ENV_DRY_RUN = process.env.DRY_RUN || process.env.BACKLOG_DRY_RUN;
-const LOG_DIR = process.env.LOG_DIR || "logs";
+const LOG_DIR = process.env.LOG_DIR!;
 const TARGET_MILESTONE = (process.env.MILESTONE || "").trim();
-
-const ISSUE_KEY_COLUMN = "キー";
-
+const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
 interface CsvRow {
   [key: string]: string;
 }
