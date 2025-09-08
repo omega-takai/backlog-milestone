@@ -7,7 +7,7 @@ import {
   patchIssueMilestones,
 } from "./backlogApi";
 import { config } from "dotenv";
-import { parseBoolean, uniq } from "./utils";
+import { parseBoolean, uniq, sleep, fetchWithRetry } from "./utils";
 
 config();
 
@@ -36,7 +36,9 @@ async function updateIssue(
   desiredMilestoneNames: string[],
   milestoneMap: Record<string, number>
 ): Promise<void> {
-  const issue = await fetchIssueDetail(issueKey);
+  const issue = await fetchWithRetry({
+    apiCall: () => fetchIssueDetail(issueKey),
+  });
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
 
@@ -67,7 +69,9 @@ async function updateIssue(
     .filter((id): id is number => Boolean(id));
 
   try {
-    await patchIssueMilestones(issueKey, milestoneIds);
+    await fetchWithRetry({
+      apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
+    });
     logger.log("");
     logger.log("✅ 更新完了");
   } catch (err: any) {
@@ -82,53 +86,66 @@ async function updateIssue(
 async function run() {
   const milestoneMap = await fetchMilestoneMap();
 
-  const tasks: Promise<void>[] = [];
+  const rows: CsvRow[] = [];
   let rowCount = 0;
   let processedCount = 0;
   let skippedCount = 0;
 
-  fs.createReadStream(CSV_FILE)
-    .pipe(
-      csv({
-        mapHeaders: ({ header }) => (header ? header.trim() : header),
-        mapValues: ({ value }) =>
-          typeof value === "string" ? value.trim() : value,
+  // CSVファイルを読み込んで配列に格納
+  await new Promise<void>((resolve, reject) => {
+    fs.createReadStream(CSV_FILE)
+      .pipe(
+        csv({
+          mapHeaders: ({ header }) => (header ? header.trim() : header),
+          mapValues: ({ value }) =>
+            typeof value === "string" ? value.trim() : value,
+        })
+      )
+      .on("data", (row: CsvRow) => {
+        rows.push(row);
       })
-    )
-    .on("data", (row: CsvRow) => {
-      rowCount += 1;
-      const issueKey = row[ISSUE_KEY_COLUMN];
-      const rawMilestone = row[MILESTONE_COLUMN] || "";
-      const milestoneNames = rawMilestone
-        ? rawMilestone.split(",").map((s) => s.trim())
-        : [];
+      .on("end", resolve)
+      .on("error", reject);
+  });
 
-      if (!issueKey) {
-        skippedCount += 1;
-        logger.log(
-          `row#${rowCount}: スキップ（${ISSUE_KEY_COLUMN} 欄が空） issueIdOrKey=(none)`
-        );
-        return;
+  // 順次実行でレート制限を回避
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    rowCount += 1;
+    const issueKey = row[ISSUE_KEY_COLUMN];
+    const rawMilestone = row[MILESTONE_COLUMN] || "";
+    const milestoneNames = rawMilestone
+      ? rawMilestone.split(",").map((s) => s.trim())
+      : [];
+
+    if (!issueKey) {
+      skippedCount += 1;
+      logger.log(
+        `row#${rowCount}: スキップ（${ISSUE_KEY_COLUMN} 欄が空） issueIdOrKey=(none)`
+      );
+      continue;
+    }
+
+    processedCount += 1;
+    logger.log(`\n[${processedCount}/${rows.length}] 処理中: ${issueKey}`);
+
+    try {
+      await updateIssue(issueKey, milestoneNames, milestoneMap);
+
+      // レート制限回避のため、API呼び出し間に800ms待機
+      // Backlog APIは1分間に60リクエストまでなので、800ms間隔で安全（理論値1000msから20%安全マージンを引いた値）
+      if (i < rows.length - 1) {
+        await sleep(800);
       }
+    } catch (error: any) {
+      logger.error(`課題 ${issueKey} の処理でエラー:`, error?.message || error);
+    }
+  }
 
-      // CSV の内容のみで更新する（自動付与は廃止）
-      processedCount += 1;
-      tasks.push(updateIssue(issueKey, milestoneNames, milestoneMap));
-    })
-    .on("end", () => {
-      Promise.all(tasks)
-        .then(() => {
-          logger.log(
-            `\n🎉 全課題の処理が完了しました (rows=${rowCount}, processed=${processedCount}, skipped=${skippedCount})`
-          );
-        })
-        .catch((e) => {
-          logger.error("処理中にエラーが発生しました:", e?.message || e);
-        })
-        .finally(() => {
-          logger.close();
-        });
-    });
+  logger.log(
+    `\n🎉 全課題の処理が完了しました (rows=${rowCount}, processed=${processedCount}, skipped=${skippedCount})`
+  );
+  logger.close();
 }
 
 // 実行開始ヘッダ（run前に出力してファイルへ確実に書かれるよう先出し）
