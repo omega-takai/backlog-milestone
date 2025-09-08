@@ -95,8 +95,6 @@ async function addMilestoneToIssue(
       apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
       baseDelay: DELAY_MS,
     });
-    logger.log("");
-    logger.log("✅ 更新完了");
   } catch (err: any) {
     logger.log("");
     logger.error("❌ 更新失敗:", err.response?.data || err.message);

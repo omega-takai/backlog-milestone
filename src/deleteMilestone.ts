@@ -17,7 +17,11 @@ const CSV_FILE = process.env.CSV_FILE!;
 const ENV_DRY_RUN = process.env.DRY_RUN || process.env.BACKLOG_DRY_RUN;
 const LOG_DIR = process.env.LOG_DIR!;
 const TARGET_MILESTONE = (process.env.MILESTONE || "").trim();
+const SKIP_IF_MILESTONE_EXISTS = (
+  process.env.SKIP_IF_MILESTONE_EXISTS || ""
+).trim();
 const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
+const DELAY_MS = parseInt(process.env.DELAY_MS || "800");
 
 interface CsvRow {
   [key: string]: string;
@@ -37,9 +41,27 @@ async function deleteMilestoneFromIssue(
 ): Promise<void> {
   const issue = await fetchWithRetry({
     apiCall: () => fetchIssueDetail(issueKey),
+    baseDelay: 0,
   });
   const { milestone: beforeMilestones = [] } = issue;
   const beforeNames = beforeMilestones.map((m) => m.name);
+
+  // スキップ対象のマイルストーンが設定されているかチェック
+  if (SKIP_IF_MILESTONE_EXISTS) {
+    const skipMilestones = SKIP_IF_MILESTONE_EXISTS.split(",").map((m) =>
+      m.trim()
+    );
+    const hasSkipMilestone = skipMilestones.some((skipMilestone) =>
+      beforeNames.includes(skipMilestone)
+    );
+
+    if (hasSkipMilestone) {
+      logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
+      logger.logDiff(beforeNames, [], false);
+      logger.groupEnd();
+      return;
+    }
+  }
 
   if (!milestoneMap[milestoneName]) {
     logger.log(
@@ -70,9 +92,8 @@ async function deleteMilestoneFromIssue(
   try {
     await fetchWithRetry({
       apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
+      baseDelay: DELAY_MS,
     });
-    logger.log("");
-    logger.log("✅ 更新完了");
   } catch (err: any) {
     logger.log("");
     logger.error("❌ 更新失敗:", err.response?.data || err.message);
@@ -134,10 +155,10 @@ async function run() {
     try {
       await deleteMilestoneFromIssue(issueKey, TARGET_MILESTONE, milestoneMap);
 
-      // レート制限回避のため、API呼び出し間に800ms待機
-      // Backlog APIは1分間に60リクエストまでなので、800ms間隔で安全（理論値1000msから20%安全マージンを引いた値）
+      // レート制限回避のため、API呼び出し間に待機
+      // Backlog APIは1分間に60リクエストまでなので、DELAY_MS間隔で安全
       if (i < rows.length - 1) {
-        await sleep(800);
+        await sleep(DELAY_MS);
       }
     } catch (error: any) {
       logger.error(`課題 ${issueKey} の処理でエラー:`, error?.message || error);
@@ -155,5 +176,7 @@ logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Target Milestone: ${TARGET_MILESTONE || "(none)"}`);
+logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
+logger.log(`Delay: ${DELAY_MS}ms`);
 
 run();
