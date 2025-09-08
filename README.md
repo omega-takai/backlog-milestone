@@ -119,14 +119,16 @@ pnpm run logs:clear
 
 ### オプション
 
-| 名前               | 説明                                          | 例                                     |
-| ------------------ | --------------------------------------------- | -------------------------------------- |
-| `CSV_FILE`         | 入力する CSV ファイルのパス。相対パス可       | `CSV_FILE=csv/input_utf_8/example.csv` |
-| `ISSUE_KEY_COLUMN` | CSV の課題キー列のヘッダ名                    | `ISSUE_KEY_COLUMN=キー`                |
-| `MILESTONE_COLUMN` | CSV のマイルストーン列のヘッダ名              | `MILESTONE_COLUMN=マイルストーン`      |
-| `MILESTONE`        | 追加/削除の対象となるマイルストーン名（単一） | `MILESTONE=v1.0`                       |
-| `DRY_RUN`          | ドライラン指定（`--dry-run` と同義）          | `DRY_RUN=1 pnpm run add-milestone`     |
-| `LOG_DIR`          | ログの出力ディレクトリ                        | `LOG_DIR=logs`                         |
+| 名前                       | 説明                                                                         | 例                                             |
+| -------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------- |
+| `CSV_FILE`                 | 入力する CSV ファイルのパス。相対パス可                                      | `CSV_FILE=csv/input_utf_8/example.csv`         |
+| `ISSUE_KEY_COLUMN`         | CSV の課題キー列のヘッダ名                                                   | `ISSUE_KEY_COLUMN=キー`                        |
+| `MILESTONE_COLUMN`         | CSV のマイルストーン列のヘッダ名                                             | `MILESTONE_COLUMN=マイルストーン`              |
+| `MILESTONE`                | 追加/削除の対象となるマイルストーン名（単一）                                | `MILESTONE=v1.0`                               |
+| `DRY_RUN`                  | ドライラン指定（`--dry-run` と同義）                                         | `DRY_RUN=1 pnpm run add-milestone`             |
+| `LOG_DIR`                  | ログの出力ディレクトリ                                                       | `LOG_DIR=logs`                                 |
+| `SKIP_IF_MILESTONE_EXISTS` | いずれかの指定マイルストーンが既に付与されていたらスキップ（カンマ区切り可） | `SKIP_IF_MILESTONE_EXISTS="v1.0,リリース済み"` |
+| `DELAY_MS`                 | 書き込み系 API と処理間スリープの待機時間(ms)。読み取り系は常に 0ms          | `DELAY_MS=1000`                                |
 
 > [!NOTE]
 >
