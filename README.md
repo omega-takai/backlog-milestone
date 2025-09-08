@@ -1,0 +1,139 @@
+<h1 align="center">Update Backlog Milestone</h1>
+<p align="center">
+Backlog（ヌーラボ）のチケットを CSV と API で一括更新する
+</p>
+
+<br />
+
+## 🤔 Why We Use the API for Bulk Updates
+
+Backlog では GUI 上で課題のマイルストーンをまとめて追加することはできず、既存のマイルストーンは置き換えられてしまいます。
+CSV 一括登録機能も新規課題の登録のみ対応しており、既存課題の更新はできません。
+そのため、既存のマイルストーンを保持しつつ複数課題をまとめて更新するには、API を使う必要があります。
+
+<br />
+
+## 🛠️ Setup
+
+各項目を Backlog で確認し
+サンプルを元に環境変数ファイルを作成してください。
+
+```zsh
+cp .env.example .env
+```
+
+> [!NOTE]
+> API キーは 個人設定 > API から取得できます。
+
+<br />
+
+## 🏃‍➡️ How to use
+
+### 1) CSV を用意
+
+更新対象の課題キーと置換後マイルストーンが記載された CSV ファイルを用意してください。<br />
+ファイルの配置ディレクトリはデフォルトで `csv/input_utf_8/` になります。
+
+- `キー`（課題キー、例: PROJ-123）
+- `マイルストーン`（カンマ区切り、例: v1.0, v1.1）
+
+例:
+
+```csv
+キー,マイルストーン
+PROJ-123,v1.0, v1.1
+PROJ-456,
+```
+
+> [!NOTE]
+> 課題の検索結果を CSV で出力できます。
+> 詳しくは [ヘルプ](https://support-ja.backlog.com/hc/ja/articles/360035642534) を参照してください。
+
+### マイルストーンを置換
+
+環境変数 `CSV_FILE` で指定した CSV をソースとして、
+指定課題を指定マイルストーンで上書き更新（置換）します。
+
+```zsh
+pnpm run update-milestones
+```
+
+### 任意のマイルストーンを追加
+
+環境変数 `CSV_FILE` で指定した CSV をソースとして、
+指定課題を編集し環境変数 `MILESTONE` で指定したマイルストーンを追加します。
+
+```zsh
+pnpm run add-milestone
+```
+
+### 任意のマイルストーンを削除
+
+環境変数 `CSV_FILE` で指定した CSV をソースとして、
+指定課題を編集し環境変数 `MILESTONE` で指定したマイルストーンを削除します。
+
+```zsh
+pnpm run delete-milestone
+```
+
+### マイルストーン一覧の取得（単独実行）
+
+```zsh
+pnpm run print:milestones
+```
+
+### Shift JIS → UTF-8 変換
+
+Backlog からエクスポートした Shift JIS の CSV を UTF-8 に変換します。
+
+```zsh
+pnpm run shift-jis-to-utf8
+```
+
+- 変換元: `csv/input_shift_jis/` 配下の CSV
+- 変換先: `csv/input_utf_8/` 配下に同名で出力
+
+### ログの削除
+
+```zsh
+pnpm run logs:clear
+```
+
+### オプション
+
+- `CSV_FILE` で入力 CSV を切り替え可能
+- `MILESTONE` で追加/削除する対象のマイルストーンを指定
+- `LOG_DIR` でログ出力先を変更可能
+- `--dry-run` または `DRY_RUN=1` でドライラン
+
+> [!NOTE]
+>
+> - 相対パスはプロジェクトルート基準。
+> - パスにスペースがある場合はクオートしてください。
+
+<br />
+
+## ✅ ドライラン
+
+API は呼ばず、 Before/After と差分のみ確認することができます。
+
+```zsh
+pnpm run update-milestones -- --dry-run
+pnpm run add-milestone -- --dry-run
+pnpm run delete-milestone -- --dry-run
+
+# もしくは
+DRY_RUN=1 pnpm run update-milestones
+DRY_RUN=1 pnpm run add-milestone
+DRY_RUN=1 pnpm run delete-milestone
+```
+
+<br />
+
+## 📚 Docs
+
+- [課題をまとめて操作の使い方 – Backlog ヘルプセンター](https://support-ja.backlog.com/hc/ja/articles/360035642374)
+- [課題を一括登録する – Backlog ヘルプセンター](https://support-ja.backlog.com/hc/ja/articles/46375040240025)
+- [課題情報の更新 | Backlog Developer API | Nulab](https://developer.nulab.com/ja/docs/backlog/api/2/update-issue/)
+- [API の設定 – Backlog ヘルプセンター](https://support-ja.backlog.com/hc/ja/articles/360035641754)
+- [課題検索結果一覧の出力 – Backlog ヘルプセンター](https://support-ja.backlog.com/hc/ja/articles/360035642534)
