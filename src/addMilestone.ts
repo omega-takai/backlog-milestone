@@ -17,7 +17,11 @@ const CSV_FILE = process.env.CSV_FILE!;
 const ENV_DRY_RUN = process.env.DRY_RUN || process.env.BACKLOG_DRY_RUN;
 const LOG_DIR = process.env.LOG_DIR!;
 const TARGET_MILESTONE = (process.env.MILESTONE || "").trim();
+const SKIP_IF_MILESTONE_EXISTS = (
+  process.env.SKIP_IF_MILESTONE_EXISTS || ""
+).trim();
 const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
+const DELAY_MS = parseInt(process.env.DELAY_MS || "800");
 interface CsvRow {
   [key: string]: string;
 }
@@ -36,9 +40,27 @@ async function addMilestoneToIssue(
 ): Promise<void> {
   const issue = await fetchWithRetry({
     apiCall: () => fetchIssueDetail(issueKey),
+    baseDelay: DELAY_MS,
   });
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
+
+  // スキップ対象のマイルストーンが設定されているかチェック
+  if (SKIP_IF_MILESTONE_EXISTS) {
+    const skipMilestones = SKIP_IF_MILESTONE_EXISTS.split(",").map((m) =>
+      m.trim()
+    );
+    const hasSkipMilestone = skipMilestones.some((skipMilestone) =>
+      beforeMilestoneNames.includes(skipMilestone)
+    );
+
+    if (hasSkipMilestone) {
+      logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
+      logger.logDiff(beforeMilestoneNames, [], false);
+      logger.groupEnd();
+      return;
+    }
+  }
 
   if (!milestoneMap[milestoneName]) {
     logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
@@ -156,5 +178,6 @@ logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Target Milestone: ${TARGET_MILESTONE || "(none)"}`);
+logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
 
 run();
