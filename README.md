@@ -1,3 +1,5 @@
+![Update Backlog Milestone](docs/images/overview.png)
+
 <h1 align="center">Update Backlog Milestone</h1>
 <p align="center">
 Backlog（ヌーラボ）のチケットを CSV と API で一括更新する
@@ -29,7 +31,9 @@ cp .env.example .env
 
 ## 🏃‍➡️ How to use
 
-### 1) CSV を用意
+<br />
+
+### CSV を用意
 
 更新対象の課題キーと置換後マイルストーンが記載された CSV ファイルを用意してください。<br />
 ファイルの配置ディレクトリはデフォルトで `csv/input_utf_8/` になります。
@@ -49,6 +53,8 @@ PROJ-456,
 > 課題の検索結果を CSV で出力できます。
 > 詳しくは [ヘルプ](https://support-ja.backlog.com/hc/ja/articles/360035642534) を参照してください。
 
+<br />
+
 ### マイルストーンを置換
 
 環境変数 `CSV_FILE` で指定した CSV をソースとして、
@@ -57,6 +63,8 @@ PROJ-456,
 ```zsh
 pnpm run update-milestones
 ```
+
+<br />
 
 ### 任意のマイルストーンを追加
 
@@ -67,6 +75,8 @@ pnpm run update-milestones
 pnpm run add-milestone
 ```
 
+<br />
+
 ### 任意のマイルストーンを削除
 
 環境変数 `CSV_FILE` で指定した CSV をソースとして、
@@ -76,11 +86,15 @@ pnpm run add-milestone
 pnpm run delete-milestone
 ```
 
+<br />
+
 ### マイルストーン一覧の取得（単独実行）
 
 ```zsh
 pnpm run print:milestones
 ```
+
+<br />
 
 ### Shift JIS → UTF-8 変換
 
@@ -93,11 +107,15 @@ pnpm run shift-jis-to-utf8
 - 変換元: `csv/input_shift_jis/` 配下の CSV
 - 変換先: `csv/input_utf_8/` 配下に同名で出力
 
+<br />
+
 ### ログの削除
 
 ```zsh
 pnpm run logs:clear
 ```
+
+<br />
 
 ### オプション
 
