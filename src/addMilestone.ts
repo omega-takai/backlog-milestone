@@ -1,7 +1,7 @@
 import fs from "fs";
 import csv from "csv-parser";
 import { config } from "dotenv";
-import { parseBoolean, uniq, sleep, fetchWithRetry } from "./utils";
+import { parseBoolean, uniq, fetchWithRetry } from "./utils";
 import { createRunLogger } from "./logger";
 import {
   fetchIssueDetail,

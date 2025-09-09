@@ -2,7 +2,7 @@ import fs from "fs";
 import csv from "csv-parser";
 import { config } from "dotenv";
 import { createRunLogger } from "./logger";
-import { parseBoolean, sleep, fetchWithRetry } from "./utils";
+import { parseBoolean, fetchWithRetry } from "./utils";
 import {
   fetchIssueDetail,
   fetchMilestoneMap,

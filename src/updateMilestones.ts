@@ -7,7 +7,7 @@ import {
   patchIssueMilestones,
 } from "./backlogApi";
 import { config } from "dotenv";
-import { parseBoolean, uniq, sleep, fetchWithRetry } from "./utils";
+import { parseBoolean, uniq, fetchWithRetry } from "./utils";
 
 config();
 
