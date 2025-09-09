@@ -1,34 +1,31 @@
 import fs from "fs";
 import csv from "csv-parser";
-import { config } from "dotenv";
 import { createRunLogger } from "./logger";
-import { parseBoolean, fetchWithRetry } from "./utils";
+import { fetchWithRetry } from "./utils";
 import {
   fetchIssueDetail,
   fetchMilestoneMap,
   patchIssueMilestones,
 } from "./backlogApi";
+import { env, isDryRun, validateRequiredEnvVars } from "./config";
 
-config();
+validateRequiredEnvVars();
 
-const SPACE_URL = process.env.BACKLOG_SPACE_URL!;
-const PROJECT_KEY = process.env.BACKLOG_PROJECT_KEY!;
-const CSV_FILE = process.env.CSV_FILE!;
-const ENV_DRY_RUN = process.env.DRY_RUN;
-const LOG_DIR = process.env.LOG_DIR!;
-const TARGET_MILESTONE = (process.env.MILESTONE || "").trim();
-const SKIP_IF_MILESTONE_EXISTS = (
-  process.env.SKIP_IF_MILESTONE_EXISTS || ""
-).trim();
-const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
+const {
+  BACKLOG_SPACE_URL,
+  BACKLOG_PROJECT_KEY,
+  CSV_FILE,
+  LOG_DIR,
+  TARGET_MILESTONE,
+  SKIP_IF_MILESTONE_EXISTS,
+  ISSUE_KEY_COLUMN,
+} = env;
 
 interface CsvRow {
   [key: string]: string;
 }
 
-const CLI_DRY_RUN =
-  process.argv.includes("--dry-run") && !process.argv.includes("--no-dry-run");
-const DRY_RUN = CLI_DRY_RUN || parseBoolean(ENV_DRY_RUN);
+const DRY_RUN = isDryRun();
 
 const logFilePath = DRY_RUN ? `delete-milestone-dry-run` : `delete-milestone`;
 const { logger, filePath: LOG_FILE } = createRunLogger(LOG_DIR, logFilePath);
@@ -122,7 +119,7 @@ async function deleteMilestoneFromIssue({
 async function run() {
   if (!TARGET_MILESTONE) {
     logger.error(
-      "MILESTONE 環境変数が未指定です。例: MILESTONE=v1.0 pnpm run delete-milestone"
+      "TARGET_MILESTONE 環境変数が未指定です。例: TARGET_MILESTONE=v1.0 pnpm run delete-milestone"
     );
     logger.close();
     process.exit(1);
@@ -188,7 +185,7 @@ async function run() {
 }
 
 logger.log(`Log file: ${LOG_FILE}`);
-logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
+logger.log(`Space: ${BACKLOG_SPACE_URL}, Project: ${BACKLOG_PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Target Milestone: ${TARGET_MILESTONE || "(none)"}`);

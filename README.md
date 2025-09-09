@@ -146,7 +146,7 @@ pnpm run typecheck
 | `CSV_FILE`                 | 入力する CSV ファイルのパス。相対パス可                                    | `CSV_FILE=csv/input_utf_8/example.csv`         |
 | `ISSUE_KEY_COLUMN`         | CSV の課題キー列のヘッダ名                                                 | `ISSUE_KEY_COLUMN=キー`                        |
 | `MILESTONE_COLUMN`         | CSV のマイルストーン列のヘッダ名                                           | `MILESTONE_COLUMN=マイルストーン`              |
-| `MILESTONE`                | 追加/削除の対象となるマイルストーン名（単一）                              | `MILESTONE=v1.0`                               |
+| `TARGET_MILESTONE`         | 追加/削除の対象となるマイルストーン名（単一）                              | `TARGET_MILESTONE=v1.0`                        |
 | `DRY_RUN`                  | ドライラン指定（`--dry-run` と同義）                                       | `DRY_RUN=1 pnpm run add-milestone`             |
 | `LOG_DIR`                  | ログの出力ディレクトリ                                                     | `LOG_DIR=logs`                                 |
 | `SKIP_IF_MILESTONE_EXISTS` | いずれかの指定マイルストーンが既に付与されていたらスキップ（カンマ区切り） | `SKIP_IF_MILESTONE_EXISTS="v1.0,リリース済み"` |

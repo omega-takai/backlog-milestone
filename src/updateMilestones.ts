@@ -6,29 +6,26 @@ import {
   fetchIssueDetail,
   patchIssueMilestones,
 } from "./backlogApi";
-import { config } from "dotenv";
-import { parseBoolean, uniq, fetchWithRetry } from "./utils";
+import { env, isDryRun, validateRequiredEnvVars } from "./config";
+import { uniq, fetchWithRetry } from "./utils";
 
-config();
+validateRequiredEnvVars();
 
-const SPACE_URL = process.env.BACKLOG_SPACE_URL!;
-const PROJECT_KEY = process.env.BACKLOG_PROJECT_KEY!;
-const CSV_FILE = process.env.CSV_FILE!;
-const ENV_DRY_RUN = process.env.DRY_RUN;
-const LOG_DIR = process.env.LOG_DIR!;
-const SKIP_IF_MILESTONE_EXISTS = (
-  process.env.SKIP_IF_MILESTONE_EXISTS || ""
-).trim();
-const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
-const MILESTONE_COLUMN = process.env.MILESTONE_COLUMN!;
+const {
+  BACKLOG_SPACE_URL,
+  BACKLOG_PROJECT_KEY,
+  CSV_FILE,
+  LOG_DIR,
+  SKIP_IF_MILESTONE_EXISTS,
+  ISSUE_KEY_COLUMN,
+  MILESTONE_COLUMN,
+} = env;
 
 interface CsvRow {
   [key: string]: string;
 }
 
-const CLI_DRY_RUN =
-  process.argv.includes("--dry-run") && !process.argv.includes("--no-dry-run");
-const DRY_RUN = CLI_DRY_RUN || parseBoolean(ENV_DRY_RUN);
+const DRY_RUN = isDryRun();
 
 const logFilePath = DRY_RUN ? `update-dry-run` : `update`;
 const { logger, filePath: LOG_FILE } = createRunLogger(LOG_DIR, logFilePath);
@@ -186,7 +183,7 @@ async function run() {
 }
 
 logger.log(`Log file: ${LOG_FILE}`);
-logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
+logger.log(`Space: ${BACKLOG_SPACE_URL}, Project: ${BACKLOG_PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
