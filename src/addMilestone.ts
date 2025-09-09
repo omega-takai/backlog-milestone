@@ -51,6 +51,10 @@ async function addMilestoneToIssue({
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
 
+  logger.group(
+    `[${processedCount}/${totalCount}] ${issueKey} ${issue.summary}`
+  );
+
   // スキップ対象のマイルストーンが設定されているかチェック
   if (SKIP_IF_MILESTONE_EXISTS) {
     const skipMilestones = SKIP_IF_MILESTONE_EXISTS.split(",").map((m) =>
@@ -61,19 +65,18 @@ async function addMilestoneToIssue({
     );
 
     if (hasSkipMilestone) {
-      logger.group(
-        `[${processedCount}/${totalCount}][SKIP] ${issueKey} ${
-          issue.summary ?? ""
-        }`
-      );
-      logger.logDiff(beforeMilestoneNames, [], false);
+      logger.logDiff({
+        before: beforeMilestoneNames,
+        after: beforeMilestoneNames,
+        status: "has-skip-milestone",
+        isDryRun: DRY_RUN,
+      });
       logger.groupEnd();
       return;
     }
   }
 
   if (!milestoneMap[milestoneName]) {
-    logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
     logger.error(
       `指定のマイルストーンが存在しません: \"${milestoneName}\"`,
       `プロジェクト=${PROJECT_KEY}`
@@ -87,13 +90,12 @@ async function addMilestoneToIssue({
     uniq(beforeMilestoneNames).sort().join("|") ===
     afterNames.slice().sort().join("|");
 
-  const label = DRY_RUN ? "DRY-RUN" : "APPLY";
-  logger.group(
-    `[${processedCount}/${totalCount}][${label}] ${issueKey} ${
-      issue.summary ?? ""
-    }`
-  );
-  logger.logDiff(beforeMilestoneNames, afterNames, !noChange);
+  logger.logDiff({
+    before: beforeMilestoneNames,
+    after: afterNames,
+    status: noChange ? "no-change" : "apply",
+    isDryRun: DRY_RUN,
+  });
 
   if (noChange || DRY_RUN) {
     logger.groupEnd();
@@ -112,6 +114,7 @@ async function addMilestoneToIssue({
     logger.log("");
     logger.error("❌ 更新失敗:", err.response?.data || err.message);
   } finally {
+    logger.log("");
     logger.groupEnd();
   }
 }
@@ -191,4 +194,6 @@ logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Target Milestone: ${TARGET_MILESTONE || "(none)"}`);
 logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
 
+logger.group("run addMilestone");
 run();
+logger.groupEnd();

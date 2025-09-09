@@ -1,5 +1,13 @@
 import fs from "fs";
 
+type LogDiffParams = {
+  before: string[] | string;
+  after: string[] | string;
+  status: "apply" | "skip" | "no-change" | "has-skip-milestone";
+  isDryRun?: boolean;
+  noneText?: string;
+};
+
 export class Logger {
   private stream: fs.WriteStream;
   private indentLevel = 0;
@@ -23,24 +31,39 @@ export class Logger {
   }
 
   // 差分行を統一フォーマットで出力する
-  // 例: (変更あり) a, b → a
-  logDiff(
-    before: string[] | string,
-    after: string[] | string,
-    changed: boolean,
-    noneText = "(none)"
-  ): void {
+  logDiff({
+    before,
+    after,
+    status,
+    isDryRun = false,
+    noneText = "(none)",
+  }: LogDiffParams): void {
     const toLine = (v: string[] | string) =>
       Array.isArray(v)
         ? v.length > 0
           ? v.join(", ")
           : noneText
         : v || noneText;
-    const status = changed ? "✅ 変更あり" : "⏩ 変更なし";
-    const desc = changed
-      ? `${toLine(before)} → ${toLine(after)}`
-      : toLine(before);
-    this.log(`${status}: ${desc}`);
+
+    const desc =
+      status === "apply"
+        ? `${toLine(before)} → ${toLine(after)}`
+        : toLine(before);
+
+    const isDryRunLabel = isDryRun ? "[DRY-RUN]" : undefined;
+
+    switch (status) {
+      case "apply":
+        this.log(`✅ ${isDryRunLabel}[APPLY] ${desc}`);
+        break;
+      case "skip":
+      case "has-skip-milestone":
+        this.log(`⏩ ${isDryRunLabel}[SKIP] ${desc}`);
+        break;
+      case "no-change":
+        this.log(`⏩ ${isDryRunLabel}[NO-CHANGE] ${desc}`);
+        break;
+    }
   }
 
   error(...args: unknown[]): void {
