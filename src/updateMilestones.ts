@@ -53,6 +53,10 @@ async function updateIssue({
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
 
+  logger.group(
+    `[${processedCount}/${totalCount}] ${issueKey} ${issue.summary}`
+  );
+
   // スキップ対象のマイルストーンが設定されているかチェック
   if (SKIP_IF_MILESTONE_EXISTS) {
     const skipMilestones = SKIP_IF_MILESTONE_EXISTS.split(",").map((m) =>
@@ -63,12 +67,12 @@ async function updateIssue({
     );
 
     if (hasSkipMilestone) {
-      logger.group(
-        `[${processedCount}/${totalCount}][SKIP] ${issueKey} ${
-          issue.summary ?? ""
-        }`
-      );
-      logger.logDiff(beforeMilestoneNames, [], false);
+      logger.logDiff({
+        before: beforeMilestoneNames,
+        after: beforeMilestoneNames,
+        status: "has-skip-milestone",
+        isDryRun: DRY_RUN,
+      });
       logger.groupEnd();
       return;
     }
@@ -87,13 +91,12 @@ async function updateIssue({
     uniq(beforeMilestoneNames).sort().join("|") ===
     afterNames.slice().sort().join("|");
 
-  const label = DRY_RUN ? "DRY-RUN" : "APPLY";
-  logger.group(
-    `[${processedCount}/${totalCount}][${label}] ${issueKey} ${
-      issue.summary ?? ""
-    }`
-  );
-  logger.logDiff(beforeMilestoneNames, afterNames, !noChange);
+  logger.logDiff({
+    before: beforeMilestoneNames,
+    after: afterNames,
+    status: noChange ? "no-change" : "apply",
+    isDryRun: DRY_RUN,
+  });
 
   if (noChange || DRY_RUN) {
     logger.groupEnd();
@@ -112,6 +115,7 @@ async function updateIssue({
     logger.log("");
     logger.error("❌ 更新失敗:", err.response?.data || err.message);
   } finally {
+    logger.log("");
     logger.groupEnd();
   }
 }
@@ -181,11 +185,12 @@ async function run() {
   logger.close();
 }
 
-// 実行開始ヘッダ（run前に出力してファイルへ確実に書かれるよう先出し）
 logger.log(`Log file: ${LOG_FILE}`);
 logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
 
+logger.group("run updateMilestones");
 run();
+logger.groupEnd();
