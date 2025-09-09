@@ -21,7 +21,6 @@ const SKIP_IF_MILESTONE_EXISTS = (
 ).trim();
 const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
 const MILESTONE_COLUMN = process.env.MILESTONE_COLUMN!;
-const DELAY_MS = parseInt(process.env.DELAY_MS || "800");
 
 interface CsvRow {
   [key: string]: string;
@@ -34,16 +33,23 @@ const DRY_RUN = CLI_DRY_RUN || parseBoolean(ENV_DRY_RUN);
 const logFilePath = DRY_RUN ? `update-dry-run` : `update`;
 const { logger, filePath: LOG_FILE } = createRunLogger(LOG_DIR, logFilePath);
 
+type UpdateIssueParams = {
+  issueKey: string;
+  desiredMilestoneNames: string[];
+  milestoneMap: Record<string, number>;
+  processedCount: number;
+  totalCount: number;
+};
+
 // 1. 課題を更新（DryRun対応＆Before/Afterログ）
-async function updateIssue(
-  issueKey: string,
-  desiredMilestoneNames: string[],
-  milestoneMap: Record<string, number>
-): Promise<void> {
-  const issue = await fetchWithRetry({
-    apiCall: () => fetchIssueDetail(issueKey),
-    baseDelay: 0,
-  });
+async function updateIssue({
+  issueKey,
+  desiredMilestoneNames,
+  milestoneMap,
+  processedCount,
+  totalCount,
+}: UpdateIssueParams): Promise<void> {
+  const issue = await fetchIssueDetail(issueKey);
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
 
@@ -57,7 +63,11 @@ async function updateIssue(
     );
 
     if (hasSkipMilestone) {
-      logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
+      logger.group(
+        `[${processedCount}/${totalCount}][SKIP] ${issueKey} ${
+          issue.summary ?? ""
+        }`
+      );
       logger.logDiff(beforeMilestoneNames, [], false);
       logger.groupEnd();
       return;
@@ -78,7 +88,11 @@ async function updateIssue(
     afterNames.slice().sort().join("|");
 
   const label = DRY_RUN ? "DRY-RUN" : "APPLY";
-  logger.group(`[${label}] ${issueKey} ${issue.summary ?? ""}`);
+  logger.group(
+    `[${processedCount}/${totalCount}][${label}] ${issueKey} ${
+      issue.summary ?? ""
+    }`
+  );
   logger.logDiff(beforeMilestoneNames, afterNames, !noChange);
 
   if (noChange || DRY_RUN) {
@@ -93,7 +107,6 @@ async function updateIssue(
   try {
     await fetchWithRetry({
       apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
-      baseDelay: DELAY_MS,
     });
   } catch (err: any) {
     logger.log("");
@@ -148,16 +161,15 @@ async function run() {
     }
 
     processedCount += 1;
-    logger.log(`\n[${processedCount}/${rows.length}] 処理中: ${issueKey}`);
 
     try {
-      await updateIssue(issueKey, milestoneNames, milestoneMap);
-
-      // レート制限回避のため、API呼び出し間に待機
-      // Backlog APIは1分間に60リクエストまでなので、DELAY_MS間隔で安全
-      if (i < rows.length - 1) {
-        await sleep(DELAY_MS);
-      }
+      await updateIssue({
+        issueKey,
+        desiredMilestoneNames: milestoneNames,
+        milestoneMap,
+        processedCount,
+        totalCount: rows.length,
+      });
     } catch (error: any) {
       logger.error(`課題 ${issueKey} の処理でエラー:`, error?.message || error);
     }
@@ -175,6 +187,5 @@ logger.log(`Space: ${SPACE_URL}, Project: ${PROJECT_KEY}`);
 logger.log(`CSV: ${CSV_FILE}`);
 logger.log(`Mode: ${DRY_RUN ? "DRY-RUN" : "APPLY"}`);
 logger.log(`Skip if milestone exists: ${SKIP_IF_MILESTONE_EXISTS || "(none)"}`);
-logger.log(`Delay: ${DELAY_MS}ms`);
 
 run();

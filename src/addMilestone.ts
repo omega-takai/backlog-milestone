@@ -21,7 +21,6 @@ const SKIP_IF_MILESTONE_EXISTS = (
   process.env.SKIP_IF_MILESTONE_EXISTS || ""
 ).trim();
 const ISSUE_KEY_COLUMN = process.env.ISSUE_KEY_COLUMN!;
-const DELAY_MS = parseInt(process.env.DELAY_MS || "800");
 interface CsvRow {
   [key: string]: string;
 }
@@ -33,15 +32,22 @@ const DRY_RUN = CLI_DRY_RUN || parseBoolean(ENV_DRY_RUN);
 const logFilePath = DRY_RUN ? `add-milestone-dry-run` : `add-milestone`;
 const { logger, filePath: LOG_FILE } = createRunLogger(LOG_DIR, logFilePath);
 
-async function addMilestoneToIssue(
-  issueKey: string,
-  milestoneName: string,
-  milestoneMap: Record<string, number>
-): Promise<void> {
-  const issue = await fetchWithRetry({
-    apiCall: () => fetchIssueDetail(issueKey),
-    baseDelay: 0,
-  });
+type AddMilestoneToIssueParams = {
+  issueKey: string;
+  milestoneName: string;
+  milestoneMap: Record<string, number>;
+  processedCount: number;
+  totalCount: number;
+};
+
+async function addMilestoneToIssue({
+  issueKey,
+  milestoneName,
+  milestoneMap,
+  processedCount,
+  totalCount,
+}: AddMilestoneToIssueParams): Promise<void> {
+  const issue = await fetchIssueDetail(issueKey);
   const { milestone: milestonesBefore = [] } = issue;
   const beforeMilestoneNames = milestonesBefore.map((m) => m.name);
 
@@ -55,7 +61,11 @@ async function addMilestoneToIssue(
     );
 
     if (hasSkipMilestone) {
-      logger.group(`[SKIP] ${issueKey} ${issue.summary ?? ""}`);
+      logger.group(
+        `[${processedCount}/${totalCount}][SKIP] ${issueKey} ${
+          issue.summary ?? ""
+        }`
+      );
       logger.logDiff(beforeMilestoneNames, [], false);
       logger.groupEnd();
       return;
@@ -78,7 +88,11 @@ async function addMilestoneToIssue(
     afterNames.slice().sort().join("|");
 
   const label = DRY_RUN ? "DRY-RUN" : "APPLY";
-  logger.group(`[${label}] ${issueKey} ${issue.summary ?? ""}`);
+  logger.group(
+    `[${processedCount}/${totalCount}][${label}] ${issueKey} ${
+      issue.summary ?? ""
+    }`
+  );
   logger.logDiff(beforeMilestoneNames, afterNames, !noChange);
 
   if (noChange || DRY_RUN) {
@@ -93,7 +107,6 @@ async function addMilestoneToIssue(
   try {
     await fetchWithRetry({
       apiCall: () => patchIssueMilestones(issueKey, milestoneIds),
-      baseDelay: DELAY_MS,
     });
   } catch (err: any) {
     logger.log("");
@@ -151,16 +164,15 @@ async function run() {
     }
 
     processedCount += 1;
-    logger.log(`\n[${processedCount}/${rows.length}] 処理中: ${issueKey}`);
 
     try {
-      await addMilestoneToIssue(issueKey, TARGET_MILESTONE, milestoneMap);
-
-      // レート制限回避のため、API呼び出し間に800ms待機
-      // Backlog APIは1分間に60リクエストまでなので、800ms間隔で安全（理論値1000msから20%安全マージンを引いた値）
-      if (i < rows.length - 1) {
-        await sleep(800);
-      }
+      await addMilestoneToIssue({
+        issueKey,
+        milestoneName: TARGET_MILESTONE,
+        milestoneMap,
+        processedCount,
+        totalCount: rows.length,
+      });
     } catch (error: any) {
       logger.error(`課題 ${issueKey} の処理でエラー:`, error?.message || error);
     }

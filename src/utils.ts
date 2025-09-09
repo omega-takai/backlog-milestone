@@ -1,3 +1,9 @@
+import { config } from "dotenv";
+
+config();
+
+const DELAY_MS = parseInt(process.env.DELAY_MS || "800");
+
 export function parseBoolean(input: string | undefined): boolean {
   if (!input) return false;
   return ["1", "true", "t", "yes", "y", "on"].includes(input.toLowerCase());
@@ -16,7 +22,7 @@ export async function sleep(ms: number): Promise<void> {
 export async function fetchWithRetry<T>({
   apiCall,
   maxRetries = 3, // デフォルト: 3回 (Backlog APIのレート制限は一時的なため、3回で十分)
-  baseDelay = 800, // デフォルト: 800ms (Backlog APIの書き込み系は60req/min制限のため、理論値1秒から20%安全マージンを引いた値)
+  baseDelay = DELAY_MS, // デフォルト: 800ms (Backlog APIの書き込み系は60req/min制限のため、理論値1秒から20%安全マージンを引いた値)
   logger,
 }: {
   apiCall: () => Promise<T>;
